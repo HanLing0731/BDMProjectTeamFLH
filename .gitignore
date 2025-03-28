@@ -1,0 +1,4 @@
+# Large data files to ignore
+RawData/
+data/structured/studentVle.csv
+.DS_Store
