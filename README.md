@@ -1,5 +1,10 @@
 # BDMProjectTeamFLH
 
+## Overview
+BDMProjectTeamFLH is a data engineering pipeline for student dropout risk prediction using Delta Lake, Spark (batch + streaming), and FastAPI. The system integrates structured, semi-structured, and unstructured data sources, supporting ranking at-risk students and clustering dropout types.
+
+## Project Structure
+```
 bdm_project/
 ├── docker-compose.yml          # Main compose file
 ├── data/                       # ALL LOCAL DATA GOES HERE
@@ -8,50 +13,57 @@ bdm_project/
 ├── api/                        # FastAPI container
 │   ├── Dockerfile              # API-specific Dockerfile
 │   ├── main.py                 # API code
-│   └──requirements.txt        # Python dependencies
+│   └── requirements.txt        # Python dependencies
 └── spark/                      # Spark container
     ├── Dockerfile              # Spark-specific Dockerfile
     └── ingest_data.py          # Streaming ingestion code
+```
 
+## Data Processing Workflow
+1. **Batch Ingestion (FastAPI)**
+    - Reads CSV files from `/data/structured/`
+    - Converts them into Delta Lake tables stored in `/data/delta/`
 
+2. **Streaming Processing (Spark)**
+    - Monitors `/data/log_data/clean_df_*.csv`
+    - Processes logs in real-time and stores them in `/data/delta/streaming_logs`
 
-[Host Machine]
- ↓ (volume mount)
-[Container: API]
- ↓ (reads)
-/data/structured/xxxx.csv
- ↓ (converts)
-Delta Lake (/data/delta/xxxx)
+3. **Photo Processing (Kaggle API & Spark)**
+    - Downloads student profile photos
+    - Organizes them by `student_id`
+    - Converts photos to binary and stores in Delta Lake `/data/delta/profile_photos`
 
-[Host Machine]
- ↓ (volume mount)
-[Container: Spark]
- ↓ (monitors)
-/data/log_data/clean_df_*.csv
- ↓ (batch + streams)
-Delta Lake (/data/delta/streaming_logs)
+## Running the Project
 
+### 1. Clone the project
 
-[Kaggle API]
- ↓ (via kagglehub download)
-[Container: Spark]
- ↓ (organizes by student_id)
-/data/unstructured/profile_photos/
-   ├── student_001/
-   │   ├── student_001_photo1.jpg
-   │   └── student_001_photo2.jpg
-   └── student_002/
-       └── student_002_photo1.jpg
- ↓ (converts to binary + metadata)
-Delta Lake (/data/delta/profile_photos)
-   └── [Delta Table]
-       ├── photo_id (string)
-       ├── student_id (string)
-       ├── photo_bytes (binary)
-       └── ingestion_time (timestamp)
+### 2. Start the Containers
+Run the following command to start the services:
+```sh
+docker-compose up -d
+```
+This will launch:
+- FastAPI for structured data ingestion
+- Spark for batch and streaming data processing
 
+### 3. Running Airflow Tasks
+Once the containers are up, access the Airflow web UI:
+```sh
+http://localhost:8080
+```
+To execute tasks:
+1. Navigate to the DAGs page
+2. Enable and trigger the DAGs
+3. Monitor logs and confirm task completion
 
+### 4. Checking Processed Data
+Once the pipeline runs successfully, the processed data will be available in the Delta Lake at `/data/delta/`
+```sh
+ls -lh /data/delta/
+```
 
+## Data Storage Structure
+```
 /data/delta/
 ├── profile_photos/            # Student profile photos (binary data)
 ├── batch_logs/                # Processed batch log files
@@ -68,3 +80,20 @@ Delta Lake (/data/delta/profile_photos)
 ├── healthcare_dataset_updated/ # Health data
 ├── students_mental_health_survey/ # Mental health data
 └── vle/                       # Virtual Learning Environment data
+```
+
+## Stopping the Project
+To stop and remove all running containers:
+```sh
+docker-compose down
+```
+
+
+## Contributors
+- HanLing
+- Lucia 
+- Filipe
+
+---
+This project is part of the BDMA curriculum for BDM coursework.
+
