@@ -11,6 +11,7 @@ import kagglehub
 DELTA_LAKE_PATH = os.getenv("DELTA_LAKE_PATH", "/data/delta")
 LOG_DATA_PATH = os.getenv("LOG_DATA_PATH", "/data/log_data")
 PHOTO_DIR = os.getenv("PHOTO_DIR", "/data/unstructured/profile_photos")
+DELTA_ENRICHED_PATH = os.path.join(DELTA_LAKE_PATH, "streaming_enriched_recommendations")
 
 # Batch datasets to process
 LOGDATASETS = [
@@ -199,21 +200,72 @@ def process_batch_logs(spark):
         except Exception as e:
             print(f"Error processing {log_file}: {str(e)}")
 
+from pyspark.sql.functions import col, when, count, avg
+
+def enrich_with_recommendations(df):
+    """Add recommendation based on engagement metrics"""
+    return df.withColumn(
+        "recommendation",
+        when(col("COURSE_VIEW_PCT") < 30, "Watch intro videos & core lectures")
+        .when(col("RESOURCE_VIEW_PCT") < 20, "Review reading materials")
+        .otherwise("Keep up the good work!")
+    )
+
 def start_log_streaming(spark):
-    """Run streaming for a fixed duration (e.g., 1 hour) then stop"""
+    """Run streaming for a fixed duration (e.g., 3 seconds), enrich data, and store"""
+
+    # Define the stream schema
     stream_df = spark.readStream.schema(define_log_schema()) \
         .option("maxFilesPerTrigger", 1) \
         .csv(f"{LOG_DATA_PATH}/*.csv")
-    
-    query = stream_df.writeStream \
+
+    # Enrich with real-time recommendation
+    enriched_df = enrich_with_recommendations(stream_df)
+
+    # Write enriched stream (with recommendation) to Delta Lake
+    enriched_query = enriched_df.writeStream \
         .format("delta") \
         .outputMode("append") \
-        .option("delimiter", ";") \
-        .option("checkpointLocation", f"{DELTA_LAKE_PATH}/_checkpoints/streaming") \
-        .trigger(processingTime="1 hour")  \
-        .start(f"{DELTA_LAKE_PATH}/streaming_logs")
-    
-    query.awaitTermination()
+        .option("checkpointLocation", f"{DELTA_LAKE_PATH}/_checkpoints/streaming_enriched") \
+        .trigger(processingTime="1 second") \
+        .start(f"{DELTA_LAKE_PATH}/streaming_enriched_recommendations")
+
+    # Let the enriched query run for 3 seconds
+    enriched_query.awaitTermination(3)
+
+    # Stop the enriched query after processing
+    enriched_query.stop()
+
+    return {
+        "status": "success",
+        "message": "Processed 3 seconds of streaming data with enrichment"
+    }
+
+
+def run_post_analysis(spark):
+    # Read enriched Delta table
+    df = spark.read.format("delta").load(DELTA_ENRICHED_PATH)
+
+    print("=== Sample of Enriched Logs ===")
+    df.show(10, truncate=False)
+
+    print("=== Recommendation Counts ===")
+    df.groupBy("recommendation").count().show()
+
+    print("=== Average Engagement Metrics ===")
+    df.select(
+        avg(col("COURSE_VIEW_PCT")).alias("avg_course_view_pct"),
+        avg(col("RESOURCE_VIEW_PCT")).alias("avg_resource_view_pct")
+    ).show()
+
+    # Optional: save summary as CSV
+    summary_df = df.groupBy("recommendation").agg(
+        count("*").alias("count")
+    )
+    summary_df.coalesce(1).write.mode("overwrite").option("header", True).csv("output/recommendation_summary")
+
+    spark.stop()
+
 
 def main(mode):
     """Main entry point for all processing modes"""
@@ -226,8 +278,9 @@ def main(mode):
         elif mode == "batch":
             process_batch_logs(spark)
         elif mode == "streaming":
-            query = start_log_streaming(spark)
-            query.awaitTermination()
+            result = start_log_streaming(spark)
+            run_post_analysis(spark)
+            print(result)
     finally:
         if mode != "streaming":  # Don't stop Spark for streaming
             spark.stop()

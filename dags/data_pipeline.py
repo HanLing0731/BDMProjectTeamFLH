@@ -1,13 +1,13 @@
+# dags/delta_lake_data_pipeline.py
 from datetime import datetime, timedelta
+import os
+
 from airflow import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.utils.trigger_rule import TriggerRule
 from docker.types import Mount
-import requests
 
-# Before running, ensure the local data directory is changed to the correct path
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -16,17 +16,17 @@ default_args = {
     'email_on_failure': True
 }
 
-def check_streaming_health():
-    """Custom health check for streaming job"""
-    import requests
-    try:
-        response = requests.get("http://spark:4040/api/v1/applications", timeout=10)
-        if response.status_code == 200:
-            print("Streaming job is running")
-            return True
-    except Exception as e:
-        print(f"Streaming health check failed: {str(e)}")
-    return False
+# ───── HOST paths (on the Docker HOST) ─────────────────────
+HOST_TRUSTED  = os.environ['HOST_TRUSTED_ZONE_PATH']     # e.g. /home/you/project/trusted_zone
+HOST_EXPLOIT  = os.environ['HOST_EXPLOIT_ZONE_PATH']     # e.g. /home/you/project/exploitation_zone
+HOST_ML       = os.environ['HOST_ML_PATH']               # e.g. /home/you/project/ML
+HOST_DATA     = os.environ['HOST_DATA_PATH']             # e.g. /home/you/project/data
+
+# ───── CONTAINER paths (inside each Airflow/DockerOperator) ─
+CNT_TRUSTED  = os.environ['TRUSTED_ZONE_PATH']           # e.g. /opt/airflow/trusted_zone
+CNT_EXPLOIT  = os.environ['EXPLOIT_ZONE_PATH']           # e.g. /opt/airflow/exploitation_zone
+CNT_ML       = os.environ['ML_PATH']                     # e.g. /opt/airflow/ML
+CNT_DATA     = os.environ['DATA_PATH']                   # e.g. /data
 
 with DAG(
     'delta_lake_data_pipeline',
@@ -34,138 +34,143 @@ with DAG(
     schedule_interval='@daily',
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    max_active_runs=3,  
+    max_active_runs=3,
     concurrency=10,
     tags=['spark', 'delta_lake']
 ) as dag:
 
-    ingest_via_api = DockerOperator(
+    # Task 1: ingest via API (no mounts needed)
+    ingest_via_api = BashOperator(
         task_id='ingest_via_api',
-        image='bdmprojectteamflh-api:latest',
-        command=[
-            'sh', '-c',
-            'for d in students courses assessments vle studentVle student_course studentRegistration studentAssessment healthcare_dataset_updated students_mental_health_survey; do '
-            'curl -f -X POST "http://localhost:8000/ingest?dataset=${d}" || exit 1; '
-            'done'
-        ],
-        entrypoint="", 
-        mount_tmp_dir=False,
-        network_mode='host',
-        mounts=[
-            Mount(source='/Users/huuuuhuuuu/BDMProjectTeamFLH/data', 
-                target='/data', 
-                type='bind')
-        ],
-        docker_url="unix://var/run/docker.sock",
-        auto_remove=True
+        bash_command="""
+            for d in students courses assessments vle studentVle student_course \
+            studentRegistration studentAssessment healthcare_dataset_updated \
+            students_mental_health_survey; do
+              curl -fsS --retry 3 --retry-delay 5 \
+                   -X POST "http://api:8000/ingest?dataset=${d}" || exit 1
+            done
+        """
     )
-        
-    # Task 2: Process photos
-    process_photos = DockerOperator(
+
+    # Task 2,3,4: spark exec via `docker exec spark …`
+    process_profile_photos = BashOperator(
         task_id='process_profile_photos',
-        image='bdmprojectteamflh-spark:latest',
-        api_version='auto',
-        auto_remove=False, 
-        docker_url="unix:///var/run/docker.sock",
-        network_mode='host',
-        command=[
-        "/bin/bash", "-c",
-        "cd /app && /opt/bitnami/python/bin/python ingest_data.py --mode=photos || exit 1"
-    ],
-        entrypoint="", 
-        mounts=[
-            Mount(source='/Users/huuuuhuuuu/BDMProjectTeamFLH/data', target='/data', type='bind')
-        ],
-        environment={
-            'DELTA_LAKE_PATH': '/data/delta',
-            'PHOTO_DIR': '/data/unstructured/profile_photos',
-            'API_HOST': 'api',
-            'API_PORT': '8000'
-        }
+        bash_command="docker exec spark bash -c 'cd /app && python ingest_data.py --mode=photos'"
     )
-
-    # Task 3: Process batch logs
-    process_batch = DockerOperator(
+    process_batch = BashOperator(
         task_id='process_batch_logs',
-        image='bdmprojectteamflh-spark:latest',
-        api_version='auto',
-        auto_remove=True,
-        docker_url="unix:///var/run/docker.sock",
-        network_mode='bridge',
-        command=[
-        "/bin/bash", "-c",
-        "cd /app && /opt/bitnami/python/bin/python ingest_data.py --mode=batch || exit 1"
-    ],
-        entrypoint="", 
-        mounts=[
-            Mount(source='/Users/huuuuhuuuu/BDMProjectTeamFLH/data', target='/data', type='bind')
-        ],
-        environment={
-            'DELTA_LAKE_PATH': '/data/delta',
-            'LOG_DATA_PATH': '/data/log_data',
-            'API_HOST': 'api',
-            'API_PORT': '8000'
-        },
-        working_dir='/app'
+        bash_command="docker exec spark bash -c 'cd /app && python ingest_data.py --mode=batch'"
+    )
+    start_streaming = BashOperator(
+        task_id='start_log_streaming',
+        bash_command="docker exec spark bash -c 'cd /app && python ingest_data.py --mode=streaming'"
     )
 
-    # Task 4: Start streaming 
-    start_streaming = DockerOperator(
-    task_id='start_log_streaming',
-    image='bdmprojectteamflh-spark:latest',
-    command=[
-        "/bin/bash", "-c",
-        "cd /app && /opt/bitnami/python/bin/python ingest_data.py --mode=streaming || exit 1"
-    ],
-    mounts=[
-        Mount(source='/Users/huuuuhuuuu/BDMProjectTeamFLH/data', target='/data', type='bind')
-    ],
-    environment={
-        'DELTA_LAKE_PATH': '/data/delta',
-        'LOG_DATA_PATH': '/data/log_data'
-    }
-)
+    # Task 5: photos → MinIO
+    photos_to_minio = DockerOperator(
+        task_id='photos_to_minio',
+        image='spark:local',
+        mounts=[
+            Mount(source=HOST_TRUSTED, target='/app/trusted_zone', type='bind'),
+            Mount(source=HOST_DATA,    target='/data',               type='bind'),
+        ],
+        environment={
+            'PHOTO_DIR': '/data/unstructured/profile_photos'
+        },
+        command='python /app/trusted_zone/photos_to_minio.py',
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
 
-    # Task 5: Health check
-    def check_streaming_health():
-        """Check if streaming application is running"""
-        try:
-            response = requests.get("http://spark:4040/api/v1/applications", timeout=10)
-            apps = response.json()
-            return any('StreamingQuery' in app.get('name', '') for app in apps)
-        except Exception as e:
-            print(f"Health check failed: {str(e)}")
-            return False
+    # Task 6: transform & load → DuckDB
+    transform_load_duckdb = DockerOperator(
+        task_id='transform_load_duckdb',
+        image='spark:local',
+        mounts=[
+            Mount(source=HOST_DATA,    target=CNT_DATA,    type='bind'),
+            Mount(source=HOST_TRUSTED, target='/app/trusted_zone', type='bind'),
+        ],
+        environment={
+            'DELTA_PATH':  f'{CNT_DATA}/delta',
+            'DUCKDB_PATH': f'{CNT_DATA}/trusted_zone.duckdb',
+        },
+        command='python /app/trusted_zone/csv_to_duckdb.py',
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
 
-    streaming_health_check = PythonOperator(
-        task_id='verify_streaming_health',
-        python_callable=check_streaming_health,
-        retries=2,
-        retry_delay=timedelta(minutes=1))
-    
-    # Task 6: Notifications
+    # Task 7: structured → exploitation zone
+    structured_to_exploitation = DockerOperator(
+        task_id='structured_data_to_exploitation',
+        image='spark:local',
+        mounts=[
+            Mount(source=HOST_EXPLOIT, target='/app/exploitation_zone', type='bind'),
+            Mount(source=HOST_DATA,    target=CNT_DATA,    type='bind'),
+        ],
+        environment={
+            'EXPLOIT_DB': f'{CNT_DATA}/exploitation_zone.duckdb',
+            'TRUSTED_DB': f'{CNT_DATA}/trusted_zone.duckdb',
+        },
+        command='python /app/exploitation_zone/duckdb_analytics.py',
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
+
+    # Task 8: unstructured → exploitation
+    unstructured_to_exploitation = DockerOperator(
+        task_id='unstructured_data_to_exploitation',
+        image='spark:local',
+        mounts=[
+            Mount(source=HOST_EXPLOIT, target='/app/exploitation_zone', type='bind'),
+            Mount(source=HOST_DATA,    target=CNT_DATA,    type='bind'),
+        ],
+        environment={
+            'PHOTO_DIR':           f'{CNT_DATA}/unstructured/profile_photos',
+            'PROCESSED_PHOTO_DIR': f'{CNT_DATA}/structured/profile_photos',
+            'PINECONE_API_KEY':    os.environ['PINECONE_API_KEY'],
+            'PINECONE_ENV':        os.environ['PINECONE_ENV']
+        },
+        command='python /app/exploitation_zone/photo_processing.py',
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
+
+    # Task 9: ML clustering
+    ml_analysis = DockerOperator(
+        task_id='ml_analysis',
+        image='spark:local',
+        mounts=[
+            Mount(source=HOST_ML,   target='/app/ML',    type='bind'),
+            Mount(source=HOST_DATA, target=CNT_DATA,  type='bind'),
+        ],
+        environment={
+            'DUCKDB_PATH': f'{CNT_DATA}/exploitation_zone.duckdb'
+        },
+        command='python /app/ML/clustering.py',
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
+
+    # Task 10: email on success
     send_notification = BashOperator(
         task_id='send_completion_notification',
-        bash_command='echo "Pipeline completed successfully" | mail -s "Delta Lake Pipeline Status" admin@example.com',
+        bash_command=(
+            'echo "Pipeline completed successfully" '
+            '| mail -s "Delta Lake Pipeline Status" admin@example.com'
+        ),
         trigger_rule=TriggerRule.ALL_SUCCESS
     )
 
-    # Workflow definition
-
-    ingest_via_api >> process_photos
-    process_photos >> process_batch 
-
-    # After batch processing completes:
-    process_batch >> [start_streaming, streaming_health_check]
-
-    # Streaming and health check run in parallel
-    # Health check continuously monitors streaming status
-    streaming_health_check >> send_notification
-
-    # Notification also waits for batch completion
-    process_batch >> send_notification
-
-    # Final notification waits for both:
-    # - Batch completion (directly)
-    # - Health check confirmation (indirectly)
-    send_notification << [process_batch, streaming_health_check]
+    # ── Dependencies ────────────────────────────────────────────────────────
+    ingest_via_api >> [process_batch, process_profile_photos]
+    process_profile_photos >> photos_to_minio
+    process_batch >> [transform_load_duckdb, start_streaming]
+    photos_to_minio >> transform_load_duckdb
+    transform_load_duckdb >> structured_to_exploitation
+    structured_to_exploitation >> [ml_analysis, unstructured_to_exploitation]
+    [ml_analysis, unstructured_to_exploitation, start_streaming] >> send_notification

@@ -91,9 +91,8 @@ students = pd.read_csv(students_path)
 num_existing_students = len(students)
 num_healthcare_rows = len(healthcare_df)
 
-if num_healthcare_rows <= num_existing_students:
-    # Assign healthcare rows an existing `id_student`
-    healthcare_df["id_student"] = students["id_student"].sample(n=num_healthcare_rows, replace=True).values
+
+healthcare_df["id_student"] = students["id_student"].sample(n=num_healthcare_rows, replace=True).values
 
 # Ensure 'Date of Admission' is within the last 6 years for each student
 current_date = datetime.now()
