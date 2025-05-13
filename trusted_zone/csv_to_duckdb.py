@@ -42,11 +42,17 @@ def transform_table(df: DataFrame, table_name: str) -> DataFrame:
         df = df.withColumn("date_submitted", col("date_submitted").cast("int"))
         df = df.filter((col("score") >= 0.0) & (col("score") <= 100.0))
 
+    
     elif table_name == "studentRegistration":
         df = df.dropDuplicates(["code_module", "code_presentation", "id_student"])
-        # Convert relative date fields to actual dates
-        df = df.withColumn("date_registration", expr(f"date_add(to_date('2013-01-01'), date_registration)"))
-        df = df.withColumn("date_unregistration", expr(f"date_add(to_date('2013-01-01'), date_unregistration)"))
+        df = df.withColumn(
+            "date_registration",
+            expr("date_add(to_date('2022-01-01'), CAST(date_registration AS INT))")
+        )
+        df = df.withColumn(
+            "date_unregistration",
+            expr("date_add(to_date('2022-01-01'), CAST(date_unregistration AS INT))")
+        )
 
     elif table_name == "student_course":
         df = df.dropDuplicates(["code_module", "code_presentation", "id_student"])
@@ -54,41 +60,51 @@ def transform_table(df: DataFrame, table_name: str) -> DataFrame:
         df = df.withColumn("final_result", lower(trim(col("final_result"))))
 
     elif table_name == "vle":
-        df = df.dropDuplicates(["id_student", "code_module", "code_presentation"])
-        df = df.withColumn("description", lower(trim(col("description"))))
+        df = df.dropDuplicates(["id_site", "code_module", "code_presentation"])
+        df = df.withColumnRenamed("id_site", "id_student")
+        df = (
+            df
+            .withColumn("activity_type", lower(trim(col("activity_type"))))
+            .withColumn("week_from", col("week_from").cast("int"))
+            .withColumn("week_to",   col("week_to").cast("int"))
+        )
 
     return df
 
 def load_to_duckdb(delta_path: str, duckdb_path: str):
     spark = SparkSession.builder \
-        .appName("Delta to DuckDB Loader") \
+        .appName("Delta → DuckDB") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .config("spark.driver.memory", "4g") \
         .getOrCreate()
 
-    duckdb_conn = duckdb.connect(duckdb_path)
-    delta_tables = [
-       d for d in os.listdir(delta_path)
-        if (
-            os.path.isdir(os.path.join(delta_path, d))
-            and not d.startswith("_")
-        )   ]
-    for table in delta_tables:
-        print(f"Transforming and loading {table} into DuckDB...")
+    # ensure parent dir exists
+    os.makedirs(os.path.dirname(duckdb_path), exist_ok=True)
+    con = duckdb.connect(duckdb_path)
 
-        df = spark.read.format("delta").load(os.path.join(delta_path, table))
-        for col_name, dtype in df.dtypes:
-            if dtype in ("date", "timestamp"):
-               df = df.withColumn(col_name, col(col_name).cast("string"))
+    for table in os.listdir(delta_path):
+        table_path = os.path.join(delta_path, table)
+        if not os.path.isdir(table_path) or table.startswith("_"):
+            continue
 
-        pandas_df = df.toPandas()
+        print(f"→ reading Delta table `{table}`")
+        df = spark.read.format("delta").load(table_path)
+        df = transform_table(df, table)
 
-        duckdb_conn.register('temp_df', pandas_df)
-        duckdb_conn.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM temp_df")
+        # write out to a per-table Parquet folder
+        parquet_tmp = f"/tmp/parquet_{table}"
+        df.write.mode("overwrite").parquet(parquet_tmp)
 
+        # ingest into DuckDB in one shot
+        con.execute(f"""
+            CREATE OR REPLACE TABLE {table} AS
+            SELECT * FROM parquet_scan('{parquet_tmp}/*.parquet');
+        """)
+        print(f"✔ loaded `{table}`")
+
+    con.close()
     spark.stop()
-    duckdb_conn.close()
-
 
 if __name__ == "__main__":
     import os

@@ -80,6 +80,7 @@ with DAG(
         command='python /app/trusted_zone/photos_to_minio.py',
         network_mode='container:spark',
         auto_remove=True,
+        mount_tmp_dir=False,
         docker_url='unix://var/run/docker.sock'
     )
 
@@ -98,6 +99,7 @@ with DAG(
         command='python /app/trusted_zone/csv_to_duckdb.py',
         network_mode='container:spark',
         auto_remove=True,
+        mount_tmp_dir=False,
         docker_url='unix://var/run/docker.sock'
     )
 
@@ -116,6 +118,7 @@ with DAG(
         command='python /app/exploitation_zone/duckdb_analytics.py',
         network_mode='container:spark',
         auto_remove=True,
+        mount_tmp_dir=False,
         docker_url='unix://var/run/docker.sock'
     )
 
@@ -136,6 +139,7 @@ with DAG(
         command='python /app/exploitation_zone/photo_processing.py',
         network_mode='container:spark',
         auto_remove=True,
+        mount_tmp_dir=False,
         docker_url='unix://var/run/docker.sock'
     )
 
