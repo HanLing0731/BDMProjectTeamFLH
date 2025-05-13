@@ -27,9 +27,12 @@ services:
       DELTA_LAKE_PATH: /data/delta
       LOG_DATA_PATH: /data/log_data
       PHOTO_DIR: /data/unstructured/profile_photos
+      PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
+      PINECONE_ENV:              us-east-1
     command: ["tail", "-f", "/dev/null"]
     depends_on:
       - api
+
 
   streaming:
     build: ./spark
@@ -84,8 +87,9 @@ services:
       DUCKDB_PATH:               /data/exploitation_zone.duckdb
 
       # other envs…
-      PINECONE_API_KEY:          ${PINECONE_API_KEY}
-      PINECONE_ENV:              ${PINECONE_ENV:-us-east-1}
+      PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
+      PINECONE_ENV:              us-east-1
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./dags:/opt/airflow/dags
@@ -109,6 +113,7 @@ services:
           --conn-host api \
           --conn-port 8000 || true
       '
+
     depends_on:
       - postgres
 
@@ -131,8 +136,8 @@ services:
       DUCKDB_PATH:               /data/exploitation_zone.duckdb
 
       # other envs…
-      PINECONE_API_KEY:          ${PINECONE_API_KEY}
-      PINECONE_ENV:              ${PINECONE_ENV:-us-east-1}
+      PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
+      PINECONE_ENV:              us-east-1
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -182,8 +187,8 @@ services:
       DUCKDB_PATH:               /data/exploitation_zone.duckdb
 
       # other envs…
-      PINECONE_API_KEY:          ${PINECONE_API_KEY}
-      PINECONE_ENV:              ${PINECONE_ENV:-us-east-1}
+      PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
+      PINECONE_ENV:              us-east-1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${PWD}/dags:/opt/airflow/dags
