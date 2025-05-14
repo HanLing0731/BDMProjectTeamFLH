@@ -23,7 +23,9 @@ RUN apt-get update && \
       pinecone \
       scikit-learn \
       numpy \
-      pandas\
+      pandas \
+      great_expectations==0.15.50 \
+      jinja2==3.0.3 \
       minio && \
     rm -rf /var/lib/apt/lists/*
 
