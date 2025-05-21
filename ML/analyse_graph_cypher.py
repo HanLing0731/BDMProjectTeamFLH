@@ -74,7 +74,7 @@ def project_and_embed():
         """)
         log.info("Computed PageRank")
 
-        # 5) Louvain → 'community'  (drop unsupported writePropertyType)
+        # 5) Louvain → 'community' 
         session.execute_write(run, f"""
           CALL gds.louvain.write(
             '{GRAPH_NAME}',
