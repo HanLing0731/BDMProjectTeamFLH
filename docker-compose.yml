@@ -78,7 +78,8 @@ services:
       HOST_ML_PATH:              ${PWD}/ML
       HOST_DATA_PATH:            ${PWD}/data
 
-      # **CONTAINER** paths, for your DAG to read/write:
+      # **CONTAINER** paths, for DAG to read/write:
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       DAGS_PATH:                 /opt/airflow/dags
       TRUSTED_ZONE_PATH:         /opt/airflow/trusted_zone
       EXPLOIT_ZONE_PATH:         /opt/airflow/exploitation_zone
@@ -89,6 +90,9 @@ services:
       # other envs…
       PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
       PINECONE_ENV:              us-east-1
+      NEO_URI:  bolt://neo4j:7687
+      NEO_USER: neo4j
+      NEO_PW:   password
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -127,8 +131,8 @@ services:
       HOST_ML_PATH:              ${PWD}/ML
       HOST_DATA_PATH:            ${PWD}/data
 
-      # **CONTAINER** paths, for your DAG to read/write:
-      DAGS_PATH:                 /opt/airflow/dags
+      # **CONTAINER** paths, for  DAG to read/write:
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       TRUSTED_ZONE_PATH:         /opt/airflow/trusted_zone
       EXPLOIT_ZONE_PATH:         /opt/airflow/exploitation_zone
       ML_PATH:                   /opt/airflow/ML
@@ -138,6 +142,9 @@ services:
       # other envs…
       PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
       PINECONE_ENV:              us-east-1
+      NEO_URI:  bolt://neo4j:7687
+      NEO_USER: neo4j
+      NEO_PW:   password
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -178,8 +185,8 @@ services:
       HOST_ML_PATH:              ${PWD}/ML
       HOST_DATA_PATH:            ${PWD}/data
 
-      # **CONTAINER** paths, for your DAG to read/write:
-      DAGS_PATH:                 /opt/airflow/dags
+      # **CONTAINER** paths, for  DAG to read/write:
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       TRUSTED_ZONE_PATH:         /opt/airflow/trusted_zone
       EXPLOIT_ZONE_PATH:         /opt/airflow/exploitation_zone
       ML_PATH:                   /opt/airflow/ML
@@ -189,6 +196,10 @@ services:
       # other envs…
       PINECONE_API_KEY:          pcsk_2rfgCL_PETEoJUYg6cKAvgqe7EXh2ru7Gzmkr6z5x6UHRmeKdjPx8Va2BAeFtLBgd6EnRF
       PINECONE_ENV:              us-east-1
+      NEO_URI:  bolt://neo4j:7687
+      NEO_USER: neo4j
+      NEO_PW:   password
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${PWD}/dags:/opt/airflow/dags
@@ -238,12 +249,26 @@ services:
         mc mb -p local/unstructured &&
         mc anonymous set download local/unstructured
       "
-
+  neo4j:
+    image: neo4j:5-enterprise
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS='["graph-data-science"]'
+    ports:
+      - "7474:7474"  # browser
+      - "7687:7687"  # bolt
+    volumes:
+      - ./neo4j/data:/data
+      - ./neo4j/logs:/logs
+      - ./neo4j/import:/import
+      - ./neo4j/plugins:/plugins
 
 volumes:
   postgres_data:
   airflow_logs:
   minio_data:
+  neo4j_data:
   data:
     driver: local
     driver_opts:

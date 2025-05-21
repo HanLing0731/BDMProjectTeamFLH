@@ -160,6 +160,58 @@ with DAG(
         docker_url='unix://var/run/docker.sock'
     )
 
+    # ─── SDM Task 10: Populate Neo4j from DuckDB ───────────────────────────
+    populate_graph = DockerOperator(
+        task_id='populate_graph',
+        image='python:3.9-slim',
+        mounts=[
+            Mount(source=HOST_EXPLOIT, target='/app/exploitation_zone', type='bind'),
+            Mount(source=HOST_DATA, target=CNT_DATA, type='bind'),
+        ],
+        environment={
+            'EXPLOIT_DB': f'{CNT_DATA}/exploitation_zone.duckdb',
+            'TRUSTED_DB': f'{CNT_DATA}/trusted_zone.duckdb',
+            'NEO_URI': os.environ['NEO_URI'],
+            'NEO_USER': os.environ['NEO_USER'],
+            'NEO_PW': os.environ['NEO_PW'],
+        },
+        command="""
+        bash -c '
+        pip install --no-cache-dir duckdb pandas neo4j-driver &&
+        python /app/exploitation_zone/populate_graph_from_duckdb.py
+        '
+        """,
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
+
+    # ─── SDM Task 11: Run Graph Analytics ────────────────────────────────
+    graph_analytics = DockerOperator(
+        task_id='graph_analytics',
+        image='python:3.9-slim',
+        mounts=[
+            Mount(source=HOST_ML,   target='/app/ML',    type='bind'),
+            Mount(source=HOST_DATA, target=CNT_DATA,  type='bind'),
+        ],
+        environment={
+            'EXPLOIT_DB': f'{CNT_DATA}/exploitation_zone.duckdb',
+            'TRUSTED_DB': f'{CNT_DATA}/trusted_zone.duckdb',
+            'NEO_URI': os.environ['NEO_URI'],
+            'NEO_USER': os.environ['NEO_USER'],
+            'NEO_PW': os.environ['NEO_PW'],
+        },
+        command="""
+        bash -c '
+        pip install --no-cache-dir duckdb pandas neo4j-driver scikit-learn &&
+        python /app/ML/analyse_graph_cypher.py
+        '
+        """,
+        network_mode='container:spark',
+        auto_remove=True,
+        docker_url='unix://var/run/docker.sock'
+    )
+
     # Task 10: email on success
     send_notification = BashOperator(
         task_id='send_completion_notification',
@@ -177,4 +229,6 @@ with DAG(
     photos_to_minio >> transform_load_duckdb
     transform_load_duckdb >> structured_to_exploitation
     structured_to_exploitation >> [ml_analysis, unstructured_to_exploitation]
-    [ml_analysis, unstructured_to_exploitation, start_streaming] >> send_notification
+    unstructured_to_exploitation >> send_notification
+    start_streaming >> send_notification
+    ml_analysis >> populate_graph >> graph_analytics >> send_notification

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Quality Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px }
+        table { border-collapse: collapse; width: 100% }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left }
+        tr:nth-child(even) { background-color: #f2f2f2 }
+        .pass { color: green }
+        .fail { color: red }
+    </style>
+</head>
+<body>
+    <h1>Data Quality Validation Report</h1>
+    <p>Generated at: 2025-05-21 19:05:28</p>
+    <table>
+        <tr>
+            <th>Table</th>
+            <th>Timestamp</th>
+            <th>Initial Rows</th>
+            <th>Final Rows</th>
+            <th>Success Rate</th>
+            <th>Validations</th>
+        </tr>
+
+        <tr>
+            <td>studentRegistration</td>
+            <td>2025-05-21 19:04:34.015730</td>
+            <td>32593</td>
+            <td>32593</td>
+            <td class="fail">50.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_pair_values_A_to_be_greater_than_B_compound: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>student_course</td>
+            <td>2025-05-21 19:04:03.532468</td>
+            <td>32593</td>
+            <td>32593</td>
+            <td class="fail">50.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_values_to_be_in_set_final_result: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>studentRegistration</td>
+            <td>2025-05-21 18:56:59.827869</td>
+            <td>32593</td>
+            <td>32593</td>
+            <td class="fail">50.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_pair_values_A_to_be_greater_than_B_compound: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>student_course</td>
+            <td>2025-05-21 18:56:31.497882</td>
+            <td>32593</td>
+            <td>32593</td>
+            <td class="fail">50.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_values_to_be_in_set_final_result: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>vle</td>
+            <td>2025-05-21 19:04:21.608760</td>
+            <td>6364</td>
+            <td>6364</td>
+            <td class="fail">57.14%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_week_from: ❌
+expect_column_values_to_be_between_week_to: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>studentAssessment</td>
+            <td>2025-05-21 19:04:14.224785</td>
+            <td>173912</td>
+            <td>173912</td>
+            <td class="fail">57.14%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_assessment_not_null: ✅
+id_assessment_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>vle</td>
+            <td>2025-05-21 18:56:48.669284</td>
+            <td>6364</td>
+            <td>6364</td>
+            <td class="fail">57.14%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_week_from: ❌
+expect_column_values_to_be_between_week_to: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>studentAssessment</td>
+            <td>2025-05-21 18:56:41.656001</td>
+            <td>173912</td>
+            <td>173912</td>
+            <td class="fail">57.14%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_assessment_not_null: ✅
+id_assessment_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>batch_logs</td>
+            <td>2025-05-21 19:04:38.513115</td>
+            <td>2728080</td>
+            <td>2728080</td>
+            <td class="fail">60.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+UID_not_null: ✅
+UID_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>batch_logs</td>
+            <td>2025-05-21 18:57:03.717837</td>
+            <td>2728080</td>
+            <td>2728080</td>
+            <td class="fail">60.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+UID_not_null: ✅
+UID_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>healthcare_dataset_updated</td>
+            <td>2025-05-21 19:04:27.098093</td>
+            <td>49806</td>
+            <td>49806</td>
+            <td class="fail">66.67%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+Insurance Provider_not_null: ✅
+Insurance Provider_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_values_to_be_between_Billing Amount: ✅
+expect_column_pair_values_A_to_be_greater_than_B_compound: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>students_mental_health_survey</td>
+            <td>2025-05-21 19:04:08.753099</td>
+            <td>6960</td>
+            <td>6960</td>
+            <td class="fail">66.67%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+Residence_Type_not_null: ✅
+Residence_Type_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_Stress_Level: ✅
+expect_column_values_to_be_in_set_Residence_Type: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>healthcare_dataset_updated</td>
+            <td>2025-05-21 18:56:53.480528</td>
+            <td>49806</td>
+            <td>49806</td>
+            <td class="fail">66.67%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+Insurance Provider_not_null: ✅
+Insurance Provider_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ❌
+expect_column_values_to_be_between_Billing Amount: ✅
+expect_column_pair_values_A_to_be_greater_than_B_compound: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>students_mental_health_survey</td>
+            <td>2025-05-21 18:56:37.012638</td>
+            <td>6960</td>
+            <td>6960</td>
+            <td class="fail">66.67%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+Residence_Type_not_null: ✅
+Residence_Type_unique: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_Stress_Level: ✅
+expect_column_values_to_be_in_set_Residence_Type: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>profile_photos</td>
+            <td>2025-05-21 19:04:20.392335</td>
+            <td>749</td>
+            <td>749</td>
+            <td class="fail">71.43%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+photo_id_not_null: ✅
+photo_id_unique: ✅
+student_id_not_null: ✅
+student_id_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>profile_photos</td>
+            <td>2025-05-21 18:56:47.592756</td>
+            <td>749</td>
+            <td>749</td>
+            <td class="fail">71.43%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+photo_id_not_null: ✅
+photo_id_unique: ✅
+student_id_not_null: ✅
+student_id_unique: ❌</pre></td>
+        </tr>
+        
+        <tr>
+            <td>students</td>
+            <td>2025-05-21 19:04:16.010343</td>
+            <td>28785</td>
+            <td>28785</td>
+            <td class="fail">75.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_CGPA: ✅
+expect_column_values_to_be_in_set_gender: ❌
+expect_column_values_to_be_between_studied_credits: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>students</td>
+            <td>2025-05-21 18:56:43.459874</td>
+            <td>28785</td>
+            <td>28785</td>
+            <td class="fail">75.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_student_not_null: ✅
+id_student_unique: ✅
+expect_column_values_to_be_between_CGPA: ✅
+expect_column_values_to_be_in_set_gender: ❌
+expect_column_values_to_be_between_studied_credits: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>streaming_enriched_recommendations</td>
+            <td>2025-05-21 19:05:24.437673</td>
+            <td>25261</td>
+            <td>25261</td>
+            <td class="fail">80.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+UID_not_null: ✅
+UID_unique: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>courses</td>
+            <td>2025-05-21 19:04:25.012732</td>
+            <td>22</td>
+            <td>22</td>
+            <td class="fail">80.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+expect_compound_columns_to_be_unique_compound: ✅
+expect_column_values_to_be_between_module_presentation_length: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>courses</td>
+            <td>2025-05-21 18:56:51.675012</td>
+            <td>22</td>
+            <td>22</td>
+            <td class="fail">80.00%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+expect_compound_columns_to_be_unique_compound: ✅
+expect_column_values_to_be_between_module_presentation_length: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>assessments</td>
+            <td>2025-05-21 19:03:57.555991</td>
+            <td>206</td>
+            <td>206</td>
+            <td class="fail">85.71%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_assessment_not_null: ✅
+id_assessment_unique: ✅
+expect_column_values_to_be_between_weight: ✅
+expect_column_values_to_be_between_date: ✅</pre></td>
+        </tr>
+        
+        <tr>
+            <td>assessments</td>
+            <td>2025-05-21 18:56:25.024435</td>
+            <td>206</td>
+            <td>206</td>
+            <td class="fail">85.71%</td>
+            <td><pre>table_not_empty: ✅
+no_duplicate_rows: ✅
+schema_consistent: ❌
+id_assessment_not_null: ✅
+id_assessment_unique: ✅
+expect_column_values_to_be_between_weight: ✅
+expect_column_values_to_be_between_date: ✅</pre></td>
+        </tr>
+        
+    </table>
+</body>
+</html>

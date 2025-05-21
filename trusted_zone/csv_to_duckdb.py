@@ -170,12 +170,16 @@ def validate_table(df: DataFrame, table_name: str) -> dict:
     return metrics
 
 def load_to_duckdb(delta_path: str, duckdb_path: str):
-    spark = SparkSession.builder \
-        .appName("Delta → DuckDB") \
-        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-        .config("spark.driver.memory", "4g") \
+    spark = (
+        SparkSession.builder
+        .appName("Delta→DuckDB")
+        .config("spark.jars.packages", "io.delta:delta-core_2.12:2.4.0")
+        # enable the Delta Lake SQL extension
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        # redirect the default catalog to Delta
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
         .getOrCreate()
+    )
 
     os.makedirs(os.path.dirname(duckdb_path), exist_ok=True)
     con = duckdb.connect(duckdb_path)
