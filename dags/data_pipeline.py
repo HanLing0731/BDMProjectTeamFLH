@@ -212,7 +212,7 @@ with DAG(
         docker_url='unix://var/run/docker.sock'
     )
 
-    # Task 10: email on success
+    # Task 12: email on success
     send_notification = BashOperator(
         task_id='send_completion_notification',
         bash_command=(
