@@ -95,7 +95,7 @@ def cluster_and_label():
             RETURN s.id AS id, s.embedding AS embed
         """))
 
-    # now it's safe to build your DataFrame
+    
     df = pd.DataFrame([
         {"id": rec["id"], **{f"e{i}": v for i, v in enumerate(rec["embed"])}}
         for rec in records
