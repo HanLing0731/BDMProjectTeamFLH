@@ -114,7 +114,7 @@ http://localhost:8080
 To execute tasks:
 1. Navigate to the DAGs page
 2. Enable and trigger the DAGs
-3. Monitor logs and confirm task completion
+3. Monitor logs and confirm task completion.(Due to the long time needed to populate the graph in neo4j, it typically takes around 30mins to finish all tasks)
    
 ### 4. To Check the result of Machine learning task
 ```sh
