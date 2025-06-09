@@ -109,7 +109,7 @@ def cluster_and_label():
     }
     for rec in records
     ])
-    emb_cols = [f"e{i}" for i in range(64)] + ["pagerank", "community"]
+    emb_cols = [c for c in df.columns if c.startswith("e")]
 
     # 8) choose optimal k via silhouette score
     best_k, best_score = 0, -1
