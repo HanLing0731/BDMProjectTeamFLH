@@ -92,15 +92,24 @@ def cluster_and_label():
         # consume the result inside the session
         records = list(session.run("""
             MATCH (s:Student)
-            RETURN s.id AS id, s.embedding AS embed
+            RETURN 
+              s.id AS id, 
+              s.embedding AS embed,
+              s.pagerank AS pagerank,
+              s.community AS community
         """))
 
     
     df = pd.DataFrame([
-        {"id": rec["id"], **{f"e{i}": v for i, v in enumerate(rec["embed"])}}
-        for rec in records
+    {
+        "id": rec["id"], 
+        "pagerank": rec["pagerank"], 
+        "community": rec["community"], 
+        **{f"e{i}": v for i, v in enumerate(rec["embed"])}
+    }
+    for rec in records
     ])
-    emb_cols = [c for c in df.columns if c.startswith("e")]
+    emb_cols = [f"e{i}" for i in range(64)] + ["pagerank", "community"]
 
     # 8) choose optimal k via silhouette score
     best_k, best_score = 0, -1
